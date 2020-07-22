@@ -2,8 +2,8 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # last modified by J. Chen, @NCL, 2017-05-30
 # mainly for ALOS data downloaded from ASF
-# can handle data with different master and slave frames
-# can handle different fbs/fbd mode for master and slave
+# can handle data with different main and subordinate frames
+# can handle different fbs/fbd mode for main and subordinate
 # dem is only demfile name
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 import isce
@@ -27,12 +27,12 @@ def cmdLineParse():
 
 Example: 
 
-insarApp_create_ALOS_mlt.py -d rawdir -m masterID -s slaveID -f framelist -dem demfile -o outdir
+insarApp_create_ALOS_mlt.py -d rawdir -m mainID -s subordinateID -f framelist -dem demfile -o outdir
             
 ''')
     parser.add_argument('-d','--rawDir', type=str, default=None, help='raw data folder path', dest='rawdir')
-    parser.add_argument('-m','--masterID', type=str, required=True, help='master orbit number', dest='master')
-    parser.add_argument('-s','--slaveID',type=str, required=True, help='slave orbit number', dest='slave')
+    parser.add_argument('-m','--mainID', type=str, required=True, help='main orbit number', dest='main')
+    parser.add_argument('-s','--subordinateID',type=str, required=True, help='subordinate orbit number', dest='subordinate')
     parser.add_argument('-f','--framelist',type=str, default=None, help='frame list', dest='frame')
     parser.add_argument('-dem','--demfile',type=str, default=None, help='dem file', dest='dem')
     parser.add_argument('-o','--outdir',type=str, default='./', help='output xml file path', dest='out')
@@ -43,13 +43,13 @@ insarApp_create_ALOS_mlt.py -d rawdir -m masterID -s slaveID -f framelist -dem d
     return inps
 
 
-def ALOS_insarapp_xml_generator(rawdir ,masterID, slaveID, frame_list, demfile=None, outdir='.'):
+def ALOS_insarapp_xml_generator(rawdir ,mainID, subordinateID, frame_list, demfile=None, outdir='.'):
     '''
     Generation of insarApp.xml for ALOS raw data.
 
     Inputs:
-         masterdir = full path to master folder
-         slavedir = full path to slave folder
+         maindir = full path to main folder
+         subordinatedir = full path to subordinate folder
          demfile = full path to the dem file
          outdir = Directory in which you want insarApp.xml created
     '''
@@ -59,76 +59,76 @@ def ALOS_insarapp_xml_generator(rawdir ,masterID, slaveID, frame_list, demfile=N
     insar = xml.Component('insar')
 
     ####Python dictionaries become components
-    ####Master info
-    master = {} 
-    slave = {}
-    masterdir_list = []
-    slavedir_list = []
-    ###make sure master and slave have same frame list
+    ####Main info
+    main = {} 
+    subordinate = {}
+    maindir_list = []
+    subordinatedir_list = []
+    ###make sure main and subordinate have same frame list
     i = 0
     while i < len(frame_list): 
-        if not (glob.glob(rawdir + '/ALP*' + masterID +'*' + frame_list[i] + '*' + 'L1.0')):
-            print("no master data for frame: ", frame_list[i])
+        if not (glob.glob(rawdir + '/ALP*' + mainID +'*' + frame_list[i] + '*' + 'L1.0')):
+            print("no main data for frame: ", frame_list[i])
             del frame_list[i]
         else:
             i += 1     
     i = 0
     while i < len(frame_list):
-        if not (glob.glob(rawdir + '/ALP*' + slaveID +'*' + frame_list[i] + '*')):
-            print("no slave data for frame: ", frame_list[i])
+        if not (glob.glob(rawdir + '/ALP*' + subordinateID +'*' + frame_list[i] + '*')):
+            print("no subordinate data for frame: ", frame_list[i])
             del frame_list[i]
         else:
             i +=1
     i = 0
-    masterimg_list = []
-    masterled_list = []
-    slaveimg_list = []
-    slaveled_list = []
-    masterfbs = False
-    slavefbs  = False
+    mainimg_list = []
+    mainled_list = []
+    subordinateimg_list = []
+    subordinateled_list = []
+    mainfbs = False
+    subordinatefbs  = False
     for i, v in enumerate(frame_list):
-        masterdir = glob.glob(rawdir + '/ALP*' + masterID +'*' + v + '*' + 'L1.0')[0]
-        slavedir = glob.glob(rawdir + '/ALP*' + slaveID +'*' + v + '*' + 'L1.0')[0]
+        maindir = glob.glob(rawdir + '/ALP*' + mainID +'*' + v + '*' + 'L1.0')[0]
+        subordinatedir = glob.glob(rawdir + '/ALP*' + subordinateID +'*' + v + '*' + 'L1.0')[0]
 
-        masterimg = glob.glob(masterdir + '/IMG-HH*')[0]
-        masterled = glob.glob(masterdir + '/LED*')[0]
-        mastersize = os.path.getsize(masterimg)
+        mainimg = glob.glob(maindir + '/IMG-HH*')[0]
+        mainled = glob.glob(maindir + '/LED*')[0]
+        mainsize = os.path.getsize(mainimg)
 
-        slaveimg = glob.glob(slavedir + '/IMG-HH*')[0]
-        slaveled = glob.glob(slavedir + '/LED*')[0]
-        slavesize = os.path.getsize(slaveimg)
+        subordinateimg = glob.glob(subordinatedir + '/IMG-HH*')[0]
+        subordinateled = glob.glob(subordinatedir + '/LED*')[0]
+        subordinatesize = os.path.getsize(subordinateimg)
         if i==0:
-            if (round(1.0*mastersize/slavesize, 0)==2.0):
-                slavefbs = True
-            elif (round(1.0*mastersize/slavesize, 1)==0.5):
-                masterfbs = True
+            if (round(1.0*mainsize/subordinatesize, 0)==2.0):
+                subordinatefbs = True
+            elif (round(1.0*mainsize/subordinatesize, 1)==0.5):
+                mainfbs = True
         
-        masterimg_list.append(os.path.basename(masterdir) + '/' + os.path.basename(masterimg))
-        masterled_list.append(os.path.basename(masterdir) + '/' + os.path.basename(masterled))
-        slaveimg_list.append(os.path.basename(slavedir) + '/' + os.path.basename(slaveimg))
-        slaveled_list.append(os.path.basename(slavedir) + '/' + os.path.basename(slaveled))
+        mainimg_list.append(os.path.basename(maindir) + '/' + os.path.basename(mainimg))
+        mainled_list.append(os.path.basename(maindir) + '/' + os.path.basename(mainled))
+        subordinateimg_list.append(os.path.basename(subordinatedir) + '/' + os.path.basename(subordinateimg))
+        subordinateled_list.append(os.path.basename(subordinatedir) + '/' + os.path.basename(subordinateled))
     ###make it shorter
-    masterimg = list(map(lambda x: '$RawDir$/' + x, masterimg_list))
-    masterled = list(map(lambda x: '$RawDir$/' + x, masterled_list))
-    master['IMAGEFILE']  =      masterimg      #Can be a string returned by another function
-    master['LEADERFILE'] =      masterled      #Can be a string returned by another function
-    if masterfbs:
-        master['RESAMPLE_FLAG'] = 'dual2single'
-    master['output'] = 'master.raw'    #Can parse file names and use date
+    mainimg = list(map(lambda x: '$RawDir$/' + x, mainimg_list))
+    mainled = list(map(lambda x: '$RawDir$/' + x, mainled_list))
+    main['IMAGEFILE']  =      mainimg      #Can be a string returned by another function
+    main['LEADERFILE'] =      mainled      #Can be a string returned by another function
+    if mainfbs:
+        main['RESAMPLE_FLAG'] = 'dual2single'
+    main['output'] = 'main.raw'    #Can parse file names and use date
 
-    slaveimg = list(map(lambda x: '$RawDir$/' + x, slaveimg_list))
-    slaveled = list(map(lambda x: '$RawDir$/' + x, slaveled_list))
-    slave['IMAGEFILE']  =  slaveimg            #Can be a string returned by another function
-    slave['LEADERFILE'] =  slaveled            #Can be a string returned by another function
-    if slavefbs:
-        slave['RESAMPLE_FLAG'] = 'dual2single'
-    slave['output'] = 'slave.raw'     #Can parse file names and use date
+    subordinateimg = list(map(lambda x: '$RawDir$/' + x, subordinateimg_list))
+    subordinateled = list(map(lambda x: '$RawDir$/' + x, subordinateled_list))
+    subordinate['IMAGEFILE']  =  subordinateimg            #Can be a string returned by another function
+    subordinate['LEADERFILE'] =  subordinateled            #Can be a string returned by another function
+    if subordinatefbs:
+        subordinate['RESAMPLE_FLAG'] = 'dual2single'
+    subordinate['output'] = 'subordinate.raw'     #Can parse file names and use date
 
     #####Set sub-component
     ####Nested dictionaries become nested components
     insar['RawDir'] = xml.Constant(os.path.abspath(rawdir))
-    insar['master'] = master
-    insar['slave'] = slave
+    insar['main'] = main
+    insar['subordinate'] = subordinate
 
     ####user can change properties according the need
     ####Set properties###
@@ -158,11 +158,11 @@ def ALOS_insarapp_xml_generator(rawdir ,masterID, slaveID, frame_list, demfile=N
 if __name__ == '__main__':
     '''
     Usage example
-    insarApp_create_ALOS_mlt.py -d rawdir -m masterID -s slaveID -f framelist -dem demfile -o outdir
+    insarApp_create_ALOS_mlt.py -d rawdir -m mainID -s subordinateID -f framelist -dem demfile -o outdir
     '''
 
     if len(sys.argv) == 1:
-        print("insarApp_create_ALOS_mlt.py -d rawdir -m masterID -s slaveID -f framelist -dem demfile -o outdir")
+        print("insarApp_create_ALOS_mlt.py -d rawdir -m mainID -s subordinateID -f framelist -dem demfile -o outdir")
         sys.exit()
 #        frame_list = '440, 450, 460, 470,480,490'
     elif len(sys.argv) > 1:
@@ -178,11 +178,11 @@ if __name__ == '__main__':
         if len(frame_list) < 1:
             print("Error: frame list is required")
             sys.exit()
-        master_ID = inps.master
-        slave_ID = inps.slave
+        main_ID = inps.main
+        subordinate_ID = inps.subordinate
         frame_list = inps.frame.split(',')
         demfile = inps.dem
         int_dir = inps.out
 
     ####Example where no DEM is provided in the input file.
-        ALOS_insarapp_xml_generator(os.path.abspath(rawdir), master_ID, slave_ID, frame_list, demfile, outdir= os.path.abspath(int_dir))
+        ALOS_insarapp_xml_generator(os.path.abspath(rawdir), main_ID, subordinate_ID, frame_list, demfile, outdir= os.path.abspath(int_dir))

@@ -28,33 +28,33 @@ def cmdLineParse():
 
 Example: 
 
-insarApp_create_EnviSAT_mlt.py -d rawdir -m masterdate mastertime -s slavedate slavetime -dem demfile -o outdir
+insarApp_create_EnviSAT_mlt.py -d rawdir -m maindate maintime -s subordinatedate subordinatetime -dem demfile -o outdir
 insarApp_create_EnviSAT_mlt.py -d rawdir -m YYYYMMDD 'hhmmss,hhmmss, ...' -s YYYYMMDD 'hhmmss, hhmmss, ...' -dem demfile -o outdir
             
 ''')
     parser.add_argument('-d','--rawDir', type=str, default=None, help='raw data folder path', dest='rawdir')
-    parser.add_argument('-m','--master', type=str, nargs='+', required=True, help='master date and timelist', dest='master')
-    parser.add_argument('-s','--slave',type=str, nargs='+', required=True, help='slave orbit number', dest='slave')
+    parser.add_argument('-m','--main', type=str, nargs='+', required=True, help='main date and timelist', dest='main')
+    parser.add_argument('-s','--subordinate',type=str, nargs='+', required=True, help='subordinate orbit number', dest='subordinate')
     parser.add_argument('-dem','--demfile',type=str, default=None, help='dem file', dest='dem')
     parser.add_argument('-o','--outdir',type=str, default='./', help='output xml file path', dest='out')
    
     inps = parser.parse_args()
-    if len(inps.master) > 2:
-        raise Exception('master should be at most two parameters. Undefined input for -m : '+str(inps.master))
-    if len(inps.slave) > 2:
-        raise Exception('slave should be at most two parameters. Undefined input for -m : '+str(inps.slave))
+    if len(inps.main) > 2:
+        raise Exception('main should be at most two parameters. Undefined input for -m : '+str(inps.main))
+    if len(inps.subordinate) > 2:
+        raise Exception('subordinate should be at most two parameters. Undefined input for -m : '+str(inps.subordinate))
 
     return inps
 
 
-def EnviSat_insarapp_xml_generator(rawdir, masterdate, slavedate, mastertime=None, slavetime=None, demfile=None, outdir='.'):
+def EnviSat_insarapp_xml_generator(rawdir, maindate, subordinatedate, maintime=None, subordinatetime=None, demfile=None, outdir='.'):
     '''
     Generation of insarApp.xml for EnviSAT raw data.
 
     Inputs:
-         mastertime = list of master time
-         masterdir = full path to master folder
-         slavedir = full path to slave folder
+         maintime = list of main time
+         maindir = full path to main folder
+         subordinatedir = full path to subordinate folder
          demfile = full path to the dem file
          outdir = Directory in which you want insarApp.xml created
     '''
@@ -62,34 +62,34 @@ def EnviSat_insarapp_xml_generator(rawdir, masterdate, slavedate, mastertime=Non
     insar = xml.Component('insar')
 
     ####Python dictionaries become components
-    ####Master info
-    master = {} 
-    masterimg = []
-    masterimg_list = []
-    masterins = ''
-    #all files in master date
-    if mastertime is None:
-        masterfiles = glob.glob(rawdir + '/ASA_IM*' + masterdate + '*.N1')
-        masterimg_list = list(map(lambda x: os.path.basename(x), masterfiles))
+    ####Main info
+    main = {} 
+    mainimg = []
+    mainimg_list = []
+    mainins = ''
+    #all files in main date
+    if maintime is None:
+        mainfiles = glob.glob(rawdir + '/ASA_IM*' + maindate + '*.N1')
+        mainimg_list = list(map(lambda x: os.path.basename(x), mainfiles))
     #defined time list
     else:
-        for i, v in enumerate(mastertime):
-            tempfile = glob.glob(rawdir + '/ASA_IM*' + masterdate +'*' + v + '*' + '.N1')[0]
+        for i, v in enumerate(maintime):
+            tempfile = glob.glob(rawdir + '/ASA_IM*' + maindate +'*' + v + '*' + '.N1')[0]
             if not os.path.exists(tempfile):
                 print(tempfile, " cannot be found")
                 sys.exit()
-            masterimg_list.append(os.path.basename(tempfile))
+            mainimg_list.append(os.path.basename(tempfile))
     ###make it shorter
-    masterimg = list(map(lambda x: '$RawDir$/' + x, masterimg_list))
+    mainimg = list(map(lambda x: '$RawDir$/' + x, mainimg_list))
     #orbit file(only check date)
-    date_master = date(int(masterdate[0:4]), int(masterdate[4:6]), int(masterdate[6:8]))
+    date_main = date(int(maindate[0:4]), int(maindate[4:6]), int(maindate[6:8]))
     dt = timedelta(days=1)
-    mdate_orbd1 = date_master - dt
-    mdate_orbd2 = date_master + dt
+    mdate_orbd1 = date_main - dt
+    mdate_orbd2 = date_main + dt
     str_morbd1 = mdate_orbd1.strftime("%Y%m%d")
     str_morbd2 = mdate_orbd2.strftime("%Y%m%d")
-    masterorb = glob.glob(Orb_dir + '/DOR_*' + str_morbd1 + '*' + str_morbd2 + '*')[0]
-    if not os.path.exists(masterorb):
+    mainorb = glob.glob(Orb_dir + '/DOR_*' + str_morbd1 + '*' + str_morbd2 + '*')[0]
+    if not os.path.exists(mainorb):
         sys.exit()
     #instrument file
     ins_all = glob.glob(Ins_dir + '/ASA_INS_AX*') 
@@ -100,49 +100,49 @@ def EnviSat_insarapp_xml_generator(rawdir, masterdate, slavedate, mastertime=Non
         date_d1 = date(int(str_d1[0:4]), int(str_d1[4:6]), int(str_d1[6:8]))
         date_d2 = date(int(str_d2[0:4]), int(str_d2[4:6]), int(str_d2[6:8]))
         #check if image date is between them
-        if date_d1 > date_master or date_d2 < date_master:
+        if date_d1 > date_main or date_d2 < date_main:
             continue
-        elif date_d1 <= date_master and date_d2 >= date_master:
-            masterins = Ins_dir + '/' + v
+        elif date_d1 <= date_main and date_d2 >= date_main:
+            mainins = Ins_dir + '/' + v
         else:
-            print("error to search master instrument file")
+            print("error to search main instrument file")
             sys.exit()
      #in case no instrument file found
 
-    master['IMAGEFILE']  =           masterimg      #Can be a string returned by another function
-    master['ORBITFILE']  =           masterorb     #Can be a string returned by another function
-    master['INSTRUMENTFILE'] =       masterins     #Can be a string returned by another function
-    master['output'] = 'master.raw'    #Can parse file names and use date
+    main['IMAGEFILE']  =           mainimg      #Can be a string returned by another function
+    main['ORBITFILE']  =           mainorb     #Can be a string returned by another function
+    main['INSTRUMENTFILE'] =       mainins     #Can be a string returned by another function
+    main['output'] = 'main.raw'    #Can parse file names and use date
 
-    ####Slave info
-    slave = {}
-    slaveimg = []
-    slaveimg_list = []
-    slaveins = ''
-     #all files in slave date
-    if slavetime is None:
-        slavefiles = glob.glob(rawdir + '/ASA_IM*' + slavedate + '*.N1')
-        slaveimg_list = list(map(lambda x: os.path.basename(x), slavefiles))
+    ####Subordinate info
+    subordinate = {}
+    subordinateimg = []
+    subordinateimg_list = []
+    subordinateins = ''
+     #all files in subordinate date
+    if subordinatetime is None:
+        subordinatefiles = glob.glob(rawdir + '/ASA_IM*' + subordinatedate + '*.N1')
+        subordinateimg_list = list(map(lambda x: os.path.basename(x), subordinatefiles))
     #defined time list
     else:
-        for i, v in enumerate(slavetime):
-            tempfile = glob.glob(rawdir + '/ASA_IM*' + slavedate +'*' + v + '*' + '.N1')[0]
+        for i, v in enumerate(subordinatetime):
+            tempfile = glob.glob(rawdir + '/ASA_IM*' + subordinatedate +'*' + v + '*' + '.N1')[0]
             if not os.path.exists(tempfile):
                 print(tempfile, " cannot be found")
                 sys.exit()
-            slaveimg_list.append(os.path.basename(tempfile))
+            subordinateimg_list.append(os.path.basename(tempfile))
     ###make it shorter
-    slaveimg = list(map(lambda x: '$RawDir$/' + x, slaveimg_list))
+    subordinateimg = list(map(lambda x: '$RawDir$/' + x, subordinateimg_list))
     #orbit file(only check date)
-    date_slave = date(int(slavedate[0:4]), int(slavedate[4:6]), int(slavedate[6:8]))
+    date_subordinate = date(int(subordinatedate[0:4]), int(subordinatedate[4:6]), int(subordinatedate[6:8]))
     ##dt = timedelta(days=1)
-    slave_orbd1 = date_slave - dt
-    slave_orbd2 = date_slave + dt
-    str_sorbd1 = slave_orbd1.strftime("%Y%m%d")
-    str_sorbd2 = slave_orbd2.strftime("%Y%m%d")
-    slaveorb = glob.glob(Orb_dir + '/DOR_*' + str_sorbd1 + '*' + str_sorbd2 + '*')[0]
-    if not os.path.exists(slaveorb):
-        print(slaveorb, " cannot be found")
+    subordinate_orbd1 = date_subordinate - dt
+    subordinate_orbd2 = date_subordinate + dt
+    str_sorbd1 = subordinate_orbd1.strftime("%Y%m%d")
+    str_sorbd2 = subordinate_orbd2.strftime("%Y%m%d")
+    subordinateorb = glob.glob(Orb_dir + '/DOR_*' + str_sorbd1 + '*' + str_sorbd2 + '*')[0]
+    if not os.path.exists(subordinateorb):
+        print(subordinateorb, " cannot be found")
         sys.exit()
     #instrument file
     #ins_all = glob.glob(Ins_dir + '/ASA_INS_AX*') 
@@ -153,25 +153,25 @@ def EnviSat_insarapp_xml_generator(rawdir, masterdate, slavedate, mastertime=Non
         date_d1 = date(int(str_d1[0:4]), int(str_d1[4:6]), int(str_d1[6:8]))
         date_d2 = date(int(str_d2[0:4]), int(str_d2[4:6]), int(str_d2[6:8]))
         #check if image date is between them
-        if date_d1 > date_slave or date_d2 < date_slave:
+        if date_d1 > date_subordinate or date_d2 < date_subordinate:
             continue
-        elif date_d1 <= date_slave and date_d2 >= date_slave:
-            slaveins = Ins_dir + '/' + v
+        elif date_d1 <= date_subordinate and date_d2 >= date_subordinate:
+            subordinateins = Ins_dir + '/' + v
         else:
-            print("error to search slave instrument file")
+            print("error to search subordinate instrument file")
             sys.exit()
      #in case no instrument file found
 
-    slave['IMAGEFILE']      =       slaveimg      #Can be a string returned by another function
-    slave['ORBITFILE']      =       slaveorb      #Can be a string returned by another function
-    slave['INSTRUMENTFILE'] =       slaveins      #Can be a string returned by another function
-    slave['output']         =      'slave.raw'    #Can parse file names and use date
+    subordinate['IMAGEFILE']      =       subordinateimg      #Can be a string returned by another function
+    subordinate['ORBITFILE']      =       subordinateorb      #Can be a string returned by another function
+    subordinate['INSTRUMENTFILE'] =       subordinateins      #Can be a string returned by another function
+    subordinate['output']         =      'subordinate.raw'    #Can parse file names and use date
 
     #####Set sub-component
     ####Nested dictionaries become nested components
     insar['RawDir'] = xml.Constant(os.path.abspath(rawdir))
-    insar['master'] = master
-    insar['slave'] = slave
+    insar['main'] = main
+    insar['subordinate'] = subordinate
 
     ####user can change properties according the need
     ####Set properties###
@@ -202,11 +202,11 @@ def EnviSat_insarapp_xml_generator(rawdir, masterdate, slavedate, mastertime=Non
 if __name__ == '__main__':
     '''
     Usage example
-    insarApp_create_EnviSAT.py -d rawdir -m masterdate mastertimelist -s slavedate slavetimelist -dem demfile -o outdir
+    insarApp_create_EnviSAT.py -d rawdir -m maindate maintimelist -s subordinatedate subordinatetimelist -dem demfile -o outdir
     '''
 
 #    if len(sys.argv) == 1:
-#        print("insarApp_create_EnviSAT_mlt.py -d rawdir -m masterdate mastertimelist -s slavedate slavetimelist -dem demfile -o outdir")
+#        print("insarApp_create_EnviSAT_mlt.py -d rawdir -m maindate maintimelist -s subordinatedate subordinatetimelist -dem demfile -o outdir")
 #        sys.exit()
 #    if len(sys.argv) > 1:
     inps = cmdLineParse()
@@ -215,22 +215,22 @@ if __name__ == '__main__':
     else:
         rawdir = inps.rawdir
 
-    master_date = inps.master[0]
-    if len(inps.master) == 1:
-        master_timelist = None
-    elif len(inps.master) == 2:
-        master_timelist_str = inps.master[1]
-        master_timelist = master_timelist_str.split(',')
+    main_date = inps.main[0]
+    if len(inps.main) == 1:
+        main_timelist = None
+    elif len(inps.main) == 2:
+        main_timelist_str = inps.main[1]
+        main_timelist = main_timelist_str.split(',')
 
-    slave_date = inps.slave[0]
-    if len(inps.slave) == 1:
-        slave_timelist = None
-    elif len(inps.slave) == 2:
-        slave_timelist_str = inps.slave[1]
-        slave_timelist = slave_timelist_str.split(',')
+    subordinate_date = inps.subordinate[0]
+    if len(inps.subordinate) == 1:
+        subordinate_timelist = None
+    elif len(inps.subordinate) == 2:
+        subordinate_timelist_str = inps.subordinate[1]
+        subordinate_timelist = subordinate_timelist_str.split(',')
 
     demfile = inps.dem
     int_dir = inps.out
 
     ####Example where no DEM is provided in the input file.
-    EnviSat_insarapp_xml_generator(os.path.abspath(rawdir), master_date, slave_date, master_timelist, slave_timelist, demfile, outdir= os.path.abspath(int_dir))
+    EnviSat_insarapp_xml_generator(os.path.abspath(rawdir), main_date, subordinate_date, main_timelist, subordinate_timelist, demfile, outdir= os.path.abspath(int_dir))
