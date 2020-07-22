@@ -26,31 +26,31 @@ def cmdLineParse():
 
 Example: 
 
-topsApp_create.py -d datadir -m masterdate -s slavedate -dem dempath -o outdir
+topsApp_create.py -d datadir -m maindate -s subordinatedate -dem dempath -o outdir
             
 ''')
     parser.add_argument('-d','--rawdir', type=str, required=False, help='raw data dir', dest='rdir')
-    parser.add_argument('-m','--masterd', type=str, required=True, help='master data date', dest='master')
-    parser.add_argument('-s','--slaved',type=str, required=True, help='slave data date', dest='slave')
+    parser.add_argument('-m','--maind', type=str, required=True, help='main data date', dest='main')
+    parser.add_argument('-s','--subordinated',type=str, required=True, help='subordinate data date', dest='subordinate')
     parser.add_argument('-dem','--dem',type=str, default=None, help='dem file path', dest='dem')
     parser.add_argument('-o','--outdir',type=str, default='./', help='output xml file path', dest='out')
     
    
     inps = parser.parse_args()
-    if (not inps.master or not inps.slave):
-        print('User did not provide master or slave data dates')
+    if (not inps.main or not inps.subordinate):
+        print('User did not provide main or subordinate data dates')
         sys.exit(0)
 
     return inps
 
 
-def SENTINEL1_topsapp_xml_generator(rawdir, masterdate, slavedate, demfile=None, outdir='.'):
+def SENTINEL1_topsapp_xml_generator(rawdir, maindate, subordinatedate, demfile=None, outdir='.'):
     '''
     Generation of topsApp.xml for ALOS raw data.
 
     Inputs:
-         masterdate = 8-digital master date 
-         slavedate = 8-digital slave date
+         maindate = 8-digital main date 
+         subordinatedate = 8-digital subordinate date
          demfile = full path to the dem file
          outdir = Directory in which you want topsApp.xml created
     '''
@@ -61,35 +61,35 @@ def SENTINEL1_topsapp_xml_generator(rawdir, masterdate, slavedate, demfile=None,
         topsinsar['swaths'] = swaths    
 
     ####Python dictionaries become components
-    ####Master info
-    master = {} 
-    mastersafe = glob.glob(rawdir + '/S1?_IW*' + masterdate + '*') #list
-#    master['safe']  =  mastersafe[0]      #Can be a string returned by another function
-    master['safe']  =  list(map(lambda x: '$SAFEdir$/' + os.path.basename(x), mastersafe))
-#    master['swath number'] = swath_number
-    master['output directory'] = masterdate 
-    master['orbit directory'] = Orbit_dir    #Can parse file names and use date
+    ####Main info
+    main = {} 
+    mainsafe = glob.glob(rawdir + '/S1?_IW*' + maindate + '*') #list
+#    main['safe']  =  mainsafe[0]      #Can be a string returned by another function
+    main['safe']  =  list(map(lambda x: '$SAFEdir$/' + os.path.basename(x), mainsafe))
+#    main['swath number'] = swath_number
+    main['output directory'] = maindate 
+    main['orbit directory'] = Orbit_dir    #Can parse file names and use date
     if Auxil_dir != '':
-        master['auxiliary data directory'] = Auxil_dir    #Can parse file names and use date
+        main['auxiliary data directory'] = Auxil_dir    #Can parse file names and use date
 
-    ####Slave info
-    slave = {}
-    slavesafe = glob.glob(rawdir + '/*' + slavedate + '*') #list
-#    slave['safe']  =  slavesafe[0]      #Can be a string returned by another function
-    slave['safe']  =  list(map(lambda x: '$SAFEdir$/' + os.path.basename(x), slavesafe))
-#    slave['swath number'] = swath_number
-    slave['output directory'] = slavedate 
-    slave['orbit directory'] = Orbit_dir    #Can parse file names and use date
+    ####Subordinate info
+    subordinate = {}
+    subordinatesafe = glob.glob(rawdir + '/*' + subordinatedate + '*') #list
+#    subordinate['safe']  =  subordinatesafe[0]      #Can be a string returned by another function
+    subordinate['safe']  =  list(map(lambda x: '$SAFEdir$/' + os.path.basename(x), subordinatesafe))
+#    subordinate['swath number'] = swath_number
+    subordinate['output directory'] = subordinatedate 
+    subordinate['orbit directory'] = Orbit_dir    #Can parse file names and use date
     if Auxil_dir != '':
-        slave['auxiliary data directory'] = Auxil_dir    #Can parse file names and use date
+        subordinate['auxiliary data directory'] = Auxil_dir    #Can parse file names and use date
 
     #####Set sub-component
     ####Nested dictionaries become nested components
 
     topsinsar['SAFEdir'] = xml.Constant(os.path.abspath(rawdir))
 
-    topsinsar['master'] = master
-    topsinsar['slave'] = slave
+    topsinsar['main'] = main
+    topsinsar['subordinate'] = subordinate
 
 #=====================================================
 #### User set properties
@@ -122,11 +122,11 @@ def SENTINEL1_topsapp_xml_generator(rawdir, masterdate, slavedate, demfile=None,
 if __name__ == '__main__':
     '''
     Usage example
-    topsApp_create_ALOS.py -m masterdate -s slavedate -dem dempath -o outdir
+    topsApp_create_ALOS.py -m maindate -s subordinatedate -dem dempath -o outdir
     '''
 
     if len(sys.argv) == 1:
-        print("topsApp_create_ALOS.py -d dir -m masterdate -s slavedate -dem dempath -o outdir")
+        print("topsApp_create_ALOS.py -d dir -m maindate -s subordinatedate -dem dempath -o outdir")
         sys.exit()
     elif len(sys.argv) > 1:
         inps = cmdLineParse()
@@ -134,10 +134,10 @@ if __name__ == '__main__':
             rawdir = Safe_dir
         else:
             rawdir = inps.rdir;
-        masterdate = inps.master;
-        slavedate = inps.slave;
+        maindate = inps.main;
+        subordinatedate = inps.subordinate;
         demfile = inps.dem;
         xml_dir = inps.out;
 
     ####Example where no DEM is provided in the input file.
-    SENTINEL1_topsapp_xml_generator(rawdir, masterdate, slavedate, demfile, outdir= os.path.abspath(xml_dir))
+    SENTINEL1_topsapp_xml_generator(rawdir, maindate, subordinatedate, demfile, outdir= os.path.abspath(xml_dir))
