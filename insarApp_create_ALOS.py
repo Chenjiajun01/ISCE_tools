@@ -13,30 +13,30 @@ def cmdLineParse():
 
 Example: 
 
-insarApp_create_ALOS.py -m masterdir -s slavedir -dem dempath -o outdir
+insarApp_create_ALOS.py -m maindir -s subordinatedir -dem dempath -o outdir
             
 ''')
-    parser.add_argument('-m','--masterd', type=str, required=True, help='master data folder path', dest='master')
-    parser.add_argument('-s','--slaved',type=str, required=True, help='slave data folder path', dest='slave')
+    parser.add_argument('-m','--maind', type=str, required=True, help='main data folder path', dest='main')
+    parser.add_argument('-s','--subordinated',type=str, required=True, help='subordinate data folder path', dest='subordinate')
     parser.add_argument('-dem','--dem',type=str, default=None, help='dem file path', dest='dem')
     parser.add_argument('-o','--outdir',type=str, default='./', help='output xml file path', dest='out')
     
    
     inps = parser.parse_args()
-    if (not inps.master or not inps.slave):
-        print('User did not provide master or slave data path')
+    if (not inps.main or not inps.subordinate):
+        print('User did not provide main or subordinate data path')
         sys.exit(0)
 
     return inps
 
 
-def ALOS_insarapp_xml_generator(masterdir, slavedir, demfile=None, outdir='.'):
+def ALOS_insarapp_xml_generator(maindir, subordinatedir, demfile=None, outdir='.'):
     '''
     Generation of insarApp.xml for ALOS raw data.
 
     Inputs:
-         masterdir = full path to master folder
-         slavedir = full path to slave folder
+         maindir = full path to main folder
+         subordinatedir = full path to subordinate folder
          demfile = full path to the dem file
          outdir = Directory in which you want insarApp.xml created
     '''
@@ -44,26 +44,26 @@ def ALOS_insarapp_xml_generator(masterdir, slavedir, demfile=None, outdir='.'):
     insar = xml.Component('insar')
 
     ####Python dictionaries become components
-    ####Master info
-    master = {} 
-    masterimg = glob.glob(masterdir + '/IMG-HH*') #list
-    masterled = glob.glob(masterdir + '/LED-*')
-    master['IMAGEFILE']  =      masterimg[0]      #Can be a string returned by another function
-    master['LEADERFILE'] =      masterled[0]      #Can be a string returned by another function
-    master['output'] = 'master.raw'    #Can parse file names and use date
+    ####Main info
+    main = {} 
+    mainimg = glob.glob(maindir + '/IMG-HH*') #list
+    mainled = glob.glob(maindir + '/LED-*')
+    main['IMAGEFILE']  =      mainimg[0]      #Can be a string returned by another function
+    main['LEADERFILE'] =      mainled[0]      #Can be a string returned by another function
+    main['output'] = 'main.raw'    #Can parse file names and use date
 
-    ####Slave info
-    slave = {}
-    slaveimg = glob.glob(slavedir + '/IMG-HH*')
-    slaveled = glob.glob(slavedir + '/LED-*')
-    slave['IMAGEFILE']  =  slaveimg[0]            #Can be a string returned by another function
-    slave['LEADERFILE'] =  slaveled[0]            #Can be a string returned by another function
-    slave['output'] = 'slave.raw'     #Can parse file names and use date
+    ####Subordinate info
+    subordinate = {}
+    subordinateimg = glob.glob(subordinatedir + '/IMG-HH*')
+    subordinateled = glob.glob(subordinatedir + '/LED-*')
+    subordinate['IMAGEFILE']  =  subordinateimg[0]            #Can be a string returned by another function
+    subordinate['LEADERFILE'] =  subordinateled[0]            #Can be a string returned by another function
+    subordinate['output'] = 'subordinate.raw'     #Can parse file names and use date
 
     #####Set sub-component
     ####Nested dictionaries become nested components
-    insar['master'] = master
-    insar['slave'] = slave
+    insar['main'] = main
+    insar['subordinate'] = subordinate
 
     ####Set properties
     insar['sensor name'] = 'ALOS'
@@ -90,24 +90,24 @@ def ALOS_insarapp_xml_generator(masterdir, slavedir, demfile=None, outdir='.'):
 if __name__ == '__main__':
     '''
     Usage example
-    insarApp_create_ALOS.py -m masterdir -s slavedir -dem dempath -o outdir
+    insarApp_create_ALOS.py -m maindir -s subordinatedir -dem dempath -o outdir
     '''
 
     if len(sys.argv) == 1:
         dir = '/home/users/b4037735/hpc2/SARDATA/Yunnan_ALOS/P488A_F470/'
-        masterdir = dir + '070611'
-        slavedir  = dir + '071027'
+        maindir = dir + '070611'
+        subordinatedir  = dir + '071027'
         int_dir   = '/home/users/b4037735/hpc2/ISCE_process/ALOS_Yunnan' #outdir
         dempath = None
     elif len(sys.argv) > 1:
         inps = cmdLineParse()
-        masterdir = inps.master;
-        slavedir = inps.slave;
+        maindir = inps.main;
+        subordinatedir = inps.subordinate;
         dempath = inps.dem;
         int_dir = inps.out;
 
     ####Example where no DEM is provided in the input file.
     if dempath == None:
-        ALOS_insarapp_xml_generator(os.path.abspath(masterdir), os.path.abspath(slavedir), demfile= None, outdir= os.path.abspath(int_dir))
+        ALOS_insarapp_xml_generator(os.path.abspath(maindir), os.path.abspath(subordinatedir), demfile= None, outdir= os.path.abspath(int_dir))
     else: 
-        ALOS_insarapp_xml_generator(os.path.abspath(masterdir), os.path.abspath(slavedir), demfile= os.path.abspath(dempath), outdir= os.path.abspath(int_dir))
+        ALOS_insarapp_xml_generator(os.path.abspath(maindir), os.path.abspath(subordinatedir), demfile= os.path.abspath(dempath), outdir= os.path.abspath(int_dir))
